@@ -1,0 +1,34 @@
+import 'package:flutter/material.dart';
+
+class HistoryPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Scan History'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: 'Search',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              children: List.generate(10, (index) {
+                return ListTile(
+                  title: Text('Scan $index'),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,292 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'home_page.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_svg_provider/flutter_svg_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+
+
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  Future<void> _login() async {
+    final response = await http.post(
+      Uri.parse('http://192.168.0.146/backoffice/webservices/Authentification.php'),
+      //Uri.parse('http://guineeticket.com/backoffice/webservices/Authentification.php'),
+
+
+      headers: <String, String>{
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        'mode': 'doConnexion',
+        'STR_UTILOGIN': _usernameController.text,
+        'STR_UTIPASSWORD': _passwordController.text,
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      // Vérifiez le code_statut dans la réponse
+      if (data['code_statut'] == '1') {
+        // Connexion réussie
+        print(data);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+
+        // Ensure all values are non-null and SOCID is an int
+        await prefs.setString('UTIFIRSTLASTNAME', data['UTIFIRSTLASTNAME'] ?? '');
+        await prefs.setString('UTIPHONE', data['UTIPHONE'] ?? '');
+        await prefs.setString('UTIMAIL', data['UTIMAIL'] ?? '');
+        await prefs.setString('UTILOGIN', data['UTILOGIN'] ?? '');
+        await prefs.setString('UTIPIC', data['UTIPIC'] ?? '');
+        await prefs.setString('UTITOKEN', data['UTITOKEN'] ?? '');
+        await prefs.setString('PRODESCRIPTION', data['PRODESCRIPTION'] ?? '');
+        await prefs.setString('PROTYPE', data['PROTYPE'] ?? '');
+        await prefs.setString('SOCNAME', data['SOCNAME'] ?? '');
+        await prefs.setString('SOCDESCRIPTION', data['SOCDESCRIPTION'] ?? '');
+        await prefs.setString('SOCLOGO', data['SOCLOGO'] ?? '');
+
+        // Parse SOCID to int
+        final socId = data['SOCID'];
+        if (socId != null && socId is String && socId.isNotEmpty) {
+          await prefs.setInt('SOCID', int.parse(socId));
+        } else {
+          await prefs.setInt('SOCID', 0);
+        }
+
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
+      } else {
+        // Connexion échouée
+        print("da______ta");
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            content: Text(data['desc_statut'] ?? 'Erreur de connexion'),
+          ),
+        );
+      }
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text('Erreur de serveur: ${response.statusCode}'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final buttonColor = isDarkMode ? Colors.blueGrey : Colors.blue;
+
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        title: Text('Connexion'),
+        backgroundColor: isDarkMode ? Colors.grey[850] : Color(0xFF022359),
+      ),
+      body: Container(
+        //padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF022359), Color(0xFF022359)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+
+        child: Stack(
+          children: [
+            // Image de fond
+            Container(
+              padding: EdgeInsets.only(top: 0.0, bottom: 50.0, left: 50.0, right: 50.0),
+              width: double.infinity,
+              child:
+              Image(
+                width: 200,
+                image: Svg('assets/images/logo_dark.svg'),
+              )
+            ),
+            // Contenu principal
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.7,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(40),
+                    topRight: Radius.circular(40),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            Text(
+                              'Bienvenue!',
+                              style: TextStyle(
+                                color: Colors.green.shade900,
+                                fontSize: 10,
+                                fontFamily: 'Rosellinda',
+                              ),
+                            ),
+                            Text(
+                              'Votre application de recensement',
+                              style: TextStyle(
+                                color: Colors.green.shade900,
+                                fontSize: 16,
+                              ),
+                            ),
+
+                            TextFormField(
+                              controller: _usernameController,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor:  isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                                labelText: 'Nom d\'utilisateur',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: const BorderSide(color: Color(0xFFcecece), width: 0.50),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: const BorderSide(color: Color(0xFFcecece), width: 0.50),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: BorderSide(color: Colors.green, width: 2.0),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: BorderSide(color: Colors.red, width: 2.0),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Veuillez entrer votre nom d\'utilisateur';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            /*TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Nom d\'utilisateur',
+                  labelStyle: TextStyle(color: textColor),
+                  filled: true,
+                  fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                ),
+                style: TextStyle(color: textColor),
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return 'Veuillez entrer votre nom d\'utilisateur';
+                  }
+                  return null;
+                },
+              ),*/
+                            SizedBox(height: 16),
+
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor:  isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                                labelText: 'Mot de passe',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: const BorderSide(color: Color(0xFFcecece), width: 0.50),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: const BorderSide(color: Color(0xFFcecece), width: 0.50),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: BorderSide(color: Colors.green, width: 2.0),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16.0),
+                                  borderSide: BorderSide(color: Colors.red, width: 2.0),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Veuillez entrer votre mot de passe';
+                                }
+                                return null;
+                              },
+                            ),
+                            /*TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Mot de passe',
+                  labelStyle: TextStyle(color: textColor),
+                  filled: true,
+                  fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                ),
+                obscureText: true,
+                style: TextStyle(color: textColor),
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return 'Veuillez entrer votre mot de passe';
+                  }
+                  return null;
+                },
+              ),*/
+                            SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  _login();
+                                  //Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Color(0xFFCC9B21),
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(horizontal: 100, vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Text('Connexion'),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+https://www.behance.net/gallery/203172897/-Netflix-Redesigned-Movie-Watching-Mobile-App-UI-UX?tracking_source=search_projects|Movie+App+design&l=5

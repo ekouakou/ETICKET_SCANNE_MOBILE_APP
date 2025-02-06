@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'intro_page.dart';
+import 'theme_provider.dart';
+import 'network_listener.dart';
+import 'network_provider.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NetworkProvider()), // Ajout du NetworkProvider
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            theme: ThemeData.light(),
+            darkTheme: ThemeData.dark(),
+            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            home: NetworkListener(child: IntroPage()), // Ajout du listener
+          );
+        },
+      ),
+    );
+  }
+}
