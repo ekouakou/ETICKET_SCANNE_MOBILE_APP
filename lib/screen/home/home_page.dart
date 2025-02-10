@@ -1,26 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_fonts/google_fonts.dart' as google_fonts;
 import 'dart:async';
-import 'dart:convert';
-import '../../services/user_provider.dart';
-import '../../services/user_service.dart';
+import '../../searchBar/search_action_button.dart';
+import '../../searchBar/search_bar.dart';
 import '../../utils/constants.dart';
-import '../login/login_page.dart';
+import '../../services/event_service.dart';
+import '../../services/user_provider.dart';
 import '../scanner/qr_scan_page.dart';
-import '../scanner/history_page.dart';
 import '../event_detail_page.dart';
 import '../../utils/theme_provider.dart';
-import '../../services/api_service.dart';
 import '../../appDrawer/app_drawer.dart';
-
 import '../../BottomNavigationBar/custom_bottom_navigation.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-
-
+import '../../services/api_service.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -34,24 +28,19 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> _carouselItems = [];
   bool _isLoading = true;
-  final String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/';
-
+  List<Map<String, dynamic>> _filteredCategories = [];
   bool _isSearchBarVisible = false;
   TextEditingController _searchController = TextEditingController();
-  String _fullName = "";
-  String _email = "";
-  String _phone = "";
-  String _profilePic = "";
   String _utiToken = "";
+
+  final EventService _eventService = EventService(); // Instance du service
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-
     _startAutoSlide();
-    _fetchData();
-    //_loadUserData();
-    _fetchCarouselData();
+    _loadData();
   }
 
   void _startAutoSlide() {
@@ -67,90 +56,57 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _fetchData() async {
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _fullName = prefs.getString('UTIFIRSTLASTNAME') ?? 'Nom inconnu';
-      _email = prefs.getString('UTIMAIL') ?? 'Email inconnu';
-      _phone = prefs.getString('UTIPHONE') ?? 'Téléphone inconnu';
-      _profilePic = prefs.getString('UTIPIC') ?? ''; // URL ou base64 de la photo de profil
-      _utiToken = prefs.getString('UTITOKEN') ?? '';
-    });
-
-    print("Full Name: $_fullName");
-    print("Email: $_email");
-    print("Phone: $_phone");
-    print("Profile Pic: $_profilePic");
-    print("_utiToken : $_utiToken");
+  Future<void> _loadData() async {
     try {
-      Map<String, String> dateRange = ApiService.getDateRange(AppConstants.startDate, AppConstants.endDate, AppConstants.dateFormat);
+      // Charger les données utilisateur depuis le service
+      final userData = await _eventService.loadUserData();
 
-      // Vérification des clés avant d'utiliser les valeurs
-      if (dateRange.containsKey('startDate') && dateRange.containsKey('endDate')) {
-        final response = await ApiService.post(AppConstants.ticketManagerEndpoint, {
-          'mode': AppConstants.listEvenementFrontMode,
-          'DT_BEGIN': dateRange['startDate']!,
-          'DT_END': dateRange['endDate']!,
-          'STR_UTITOKEN': _utiToken,
-        });
+      setState(() {
+        _utiToken = userData['utiToken']!;
+      });
 
-        final responseBody = response.body.trim();
+      // Récupérer les événements et les données du carousel
+      categories = await _eventService.fetchEvents(_utiToken);
+      _carouselItems = await _eventService.fetchCarouselData();
 
-        if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
-          final jsonResponse = jsonDecode(responseBody);
-          if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
-            setState(() {
-              categories = List<Map<String, dynamic>>.from(jsonResponse['data']);
-              _isLoading = false;
-            });
-          } else {
-            throw Exception('La réponse du serveur n\'est pas au format attendu');
-          }
-        } else {
-          throw Exception('La réponse du serveur n\'est pas en JSON valide');
-        }
-      } else {
-        throw Exception('Les clés startDate ou endDate sont manquantes dans dateRange');
-      }
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
-      print('Erreur lors de la récupération des données: $e');
+      print('Erreur lors du chargement des données: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
-
   }
 
-  Future<void> _fetchCarouselData() async {
+  void _filterEvents(String query) {
+    setState(() {
+      _isSearching = query.isNotEmpty;
 
-    try {
-      Map<String, String> dateRange = ApiService.getDateRange(AppConstants.startDate, AppConstants.endDate, AppConstants.dateFormat);
-      if (dateRange.containsKey('startDate') && dateRange.containsKey('endDate')) {
-        final response = await ApiService.post(AppConstants.ConfigurationManagerEndpoint, {
-          'mode': AppConstants.listBanniereMode,
-          'DT_BEGIN': dateRange['startDate']!,
-          'DT_END': dateRange['endDate']!,
-        });
+      if (_isSearching) {
+        _filteredCategories = categories.map((category) {
+          var filteredCategory = Map<String, dynamic>.from(category);
 
-        final responseBody = response.body.trim();
+          filteredCategory['evenements'] = category['evenements'].where((event) {
+            return event['STR_EVENAME']
+                .toString()
+                .toLowerCase()
+                .contains(query.toLowerCase());
+          }).toList();
 
-        if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
-          final jsonResponse = jsonDecode(responseBody);
-          if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
-            setState(() {
-              _carouselItems = List<Map<String, dynamic>>.from(jsonResponse['data']);
-            });
-          } else {
-            throw Exception('La réponse du serveur n\'est pas au format attendu');
-          }
-        } else {
-          throw Exception('La réponse du serveur n\'est pas en JSON valide');
-        }
+          return filteredCategory;
+        }).toList();
+
+        _filteredCategories = _filteredCategories
+            .where((category) =>
+        category['evenements'] != null &&
+            category['evenements'].isNotEmpty)
+            .toList();
       } else {
-        throw Exception('Les clés startDate ou endDate sont manquantes dans dateRange');
+        _filteredCategories = List.from(categories);
       }
-
-    } catch (e) {
-      print('Erreur lors de la récupération des données du carousel: $e');
-    }
+    });
   }
 
   @override
@@ -168,24 +124,23 @@ class _HomePageState extends State<HomePage> {
     final textColor = isDarkMode ? Colors.white : Colors.black;
     var userProvider = Provider.of<UserProvider>(context);
 
-
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text('Accueil'),
         backgroundColor: isDarkMode ? Colors.black54 : Colors.white,
         titleTextStyle: TextStyle(
-          color: isDarkMode ? Colors.white : Colors.black, // Change la couleur du texte
+          color: isDarkMode ? Colors.white : Colors.black,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
         iconTheme: IconThemeData(
-          color: isDarkMode ? Colors.white : Colors.black, // Change la couleur de l'icône du drawer
+          color: isDarkMode ? Colors.white : Colors.black,
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: isDarkMode ? Colors.white : Colors.black), // Change la couleur de l'icône
-            onPressed: () {
+          SearchActionButton(
+            isSearchBarVisible: _isSearchBarVisible,
+            onSearchIconPressed: () {
               setState(() {
                 _isSearchBarVisible = !_isSearchBarVisible;
               });
@@ -194,8 +149,6 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       drawer: AppDrawer(userName: userProvider.fullName, userEmail : userProvider.email),
-
-
       body: Column(
         children: [
           AnimatedContainer(
@@ -203,27 +156,9 @@ class _HomePageState extends State<HomePage> {
             height: _isSearchBarVisible ? 60.0 : 0.0,
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: _isSearchBarVisible
-                ? Material(
-              elevation: 4,
-              shadowColor: Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16.0),
-              child: Padding(
-                padding: const EdgeInsets.all(0.0),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Rechercher',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onChanged: (value) {
-                    // Fonction de recherche
-                  },
-                ),
-              ),
+                ? AppSearchBar(
+              controller: _searchController,
+              onChanged: _filterEvents,
             )
                 : null,
           ),
@@ -237,7 +172,7 @@ class _HomePageState extends State<HomePage> {
                 CarouselSlider(
                   items: _carouselItems.map((item) {
                     final imageUrl = item['STR_BANPATH'] != null
-                        ? _baseUrl + item['STR_BANPATH']
+                        ? ApiService.getImageBaseUrl() + item['STR_BANPATH']
                         : '';
                     final title = item['title'] ?? 'Titre non disponible';
                     final description = item['description'] ?? 'Description non disponible';
@@ -252,30 +187,6 @@ class _HomePageState extends State<HomePage> {
                           fit: BoxFit.cover,
                         ),
                       ),
-                      /*child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                style: google_fonts.GoogleFonts.poppins(fontSize: 20, color: Colors.white),
-                              ),
-                              Text(
-                                description,
-                                style: google_fonts.GoogleFonts.poppins(fontSize: 16, color: Colors.white),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {},
-                                child: Text(price),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),*/
                     );
                   }).toList(),
                   options: CarouselOptions(
@@ -287,7 +198,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 20),
                 // Affichage des catégories et des événements
-                for (var category in categories)
+                for (var category in (_isSearching ? _filteredCategories : categories))
                   if (category['evenements'] != null && category['evenements'].isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +221,7 @@ class _HomePageState extends State<HomePage> {
                             itemBuilder: (context, index) {
                               var event = category['evenements'][index];
                               final imageUrl = event['STR_EVEPIC'] != null
-                                  ? _baseUrl + event['STR_EVEPIC']
+                                  ? ApiService.getImageBaseUrl() + event['STR_EVEPIC']
                                   : '';
                               final eventName = event['STR_EVENAME'] ?? 'Nom non disponible';
 
@@ -375,7 +286,6 @@ class _HomePageState extends State<HomePage> {
       ),
 
       bottomNavigationBar: CustomBottomNavBar(currentIndex: 0),
-
     );
   }
 }

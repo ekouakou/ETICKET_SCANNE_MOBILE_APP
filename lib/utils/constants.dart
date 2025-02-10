@@ -18,6 +18,10 @@ class AppConstants {
   static const String verifyTicketMode = "verifyTicket";
   static const String listEvenementFrontMode = "listEvenementFront";
   static const String listBanniereMode = "listBanniere";
+  static const String listTicketMode = "listTicket";
+  static const String LG_AGEREQUESTID = "1";
+
+
 
   // Spacings
   static const double spaceSmall = 8.0;

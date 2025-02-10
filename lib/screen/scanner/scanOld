@@ -150,11 +150,7 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
             right: 0,
             child: Center(
               child: ElevatedButton(
-                onPressed: () {
-                  controller?.resumeCamera();
-                  _animationController.repeat(reverse: true);
-                  _isScanningPaused = false;
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -166,7 +162,6 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
                   style: TextStyle(color: textColor, fontSize: 18),
                 ),
               ),
-
             ),
           ),
         ],
@@ -217,10 +212,73 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
 
       if (data['code_statut'] == '0') {
         showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red);
+        /*showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Notification'),
+            content: Text(data['desc_statut']),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _isDialogOpen = false;
+                  });
+                  controller?.resumeCamera();
+                  _animationController.repeat(reverse: true);
+                  _isScanningPaused = false;
+                },
+                child: Text('Fermer'),
+              ),
+            ],
+          ),
+        );*/
       } else if (data['code_statut'] == '1') {
         showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red);
+        /*showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Notification'),
+            content: Text(data['desc_statut']),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _isDialogOpen = false;
+                  });
+                  controller?.resumeCamera();
+                  _animationController.repeat(reverse: true);
+                  _isScanningPaused = false;
+                },
+                child: Text('Fermer'),
+              ),
+            ],
+          ),
+        );*/
       } else if (data['code_statut'] == '2') {
         showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red);
+        /*showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Notification'),
+            content: Text(data['desc_statut']),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _isDialogOpen = false;
+                  });
+                  controller?.resumeCamera();
+                  _animationController.repeat(reverse: true);
+                  _isScanningPaused = false;
+                },
+                child: Text('Fermer'),
+              ),
+            ],
+          ),
+        );*/
       } else {
         showDialog(
           context: context,
@@ -292,6 +350,36 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
     } else {
       _isDialogOpen = true;
       showCustomDialog(context, "Échec du scan", icon: Icons.error, iconColor: Colors.red);
+      /*showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error,
+                color: Colors.red,
+                size: 50,
+              ),
+              SizedBox(height: 10),
+              Text('Échec du scan'),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _isDialogOpen = false;
+                  });
+                  controller?.resumeCamera();
+                  _animationController.repeat(reverse: true);
+                  _isScanningPaused = false;
+                },
+                child: Text('Fermer'),
+              ),
+            ],
+          ),
+        ),
+      );*/
     }
   }
 

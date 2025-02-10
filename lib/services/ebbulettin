@@ -1,24 +1,24 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 class ApiService {
   // Configuration de l'URL de base
-  static const String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
-  static const String _imagebaseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
+  static const String _baseUrl = 'http://192.168.0.146:8181/fonctionnaire/login';
+  //static const String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
+  static const String _imagebaseUrl = 'http://guineeticket.com/eticketbackend/backoffice/';
 
   // Timeout par défaut pour les requêtes
   static const Duration timeoutDuration = Duration(seconds: 30);
 
   // Headers par défaut
   static Map<String, String> get _defaultHeaders => {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Accept': 'application/json',
-
-    //'Content-Type': 'application/json',
-    //'Accept': '*/*',
+    'Accept': '*/*',
+    'Content-Type': 'application/json',
   };
+
 
   // Méthode pour obtenir l'URL de base
   static String getBaseUrl() {
@@ -31,7 +31,8 @@ class ApiService {
 
   // Méthode POST générique
   static Future<http.Response> post(String endpoint, Map<String, String> body) async {
-    final url = '$_baseUrl$endpoint';
+    //final url = '$_baseUrl$endpoint';
+    final url = '$_baseUrl';
 
     // Logging de la requête
     print('🌐 Requête POST vers : $url');
@@ -42,7 +43,7 @@ class ApiService {
           .post(
         Uri.parse(url),
         headers: _defaultHeaders,
-        body: body,
+        body: jsonEncode(body),
       )
           .timeout(timeoutDuration);
 
