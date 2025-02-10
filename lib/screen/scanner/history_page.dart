@@ -1,8 +1,11 @@
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../../services/api_service.dart';
+import '../../services/event_service.dart';
 import '../../utils/theme_provider.dart'; // Assurez-vous que le chemin est correct
 
 class HistoryPage extends StatefulWidget {
@@ -16,11 +19,46 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _isSearchVisible = false;
   TextEditingController _searchController = TextEditingController();
 
+  int _currentPage = 0;
+  Timer? _timer;
+  List<Map<String, dynamic>> tecketScanner = [];
+  List<Map<String, dynamic>> _carouselItems = [];
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _filteredCategories = [];
+  bool _isSearchBarVisible = false;
+ // TextEditingController _searchController = TextEditingController();
+  String _utiToken = "";
+  final EventService _eventService = EventService(); // Instance du service
+
   @override
   void initState() {
     super.initState();
     _fetchHistory();
+    _loadData();
     _searchController.addListener(_filterHistory);
+  }
+
+  Future<void> _loadData() async {
+    try {
+      // Charger les données utilisateur depuis le service
+      final userData = await _eventService.loadUserData();
+
+      setState(() {
+        _utiToken = userData['utiToken']!;
+      });
+
+      // Récupérer les événements et les données du carousel
+      tecketScanner = await _eventService.fetchScanneHistory(_utiToken);
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Erreur lors du chargement des données: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _fetchHistory() async {

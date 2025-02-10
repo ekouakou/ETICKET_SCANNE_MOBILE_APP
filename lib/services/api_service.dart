@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 class ApiService {
   // Configuration de l'URL de base
   static const String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
-  static const String _imagebaseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
+  //static const String _baseUrl = 'http://192.168.0.146:8181/fonctionnaire/login';
+  static const String _imagebaseUrl = 'http://guineeticket.com/eticketbackend/backoffice/';
 
   // Timeout par défaut pour les requêtes
   static const Duration timeoutDuration = Duration(seconds: 30);
@@ -15,7 +16,7 @@ class ApiService {
   static Map<String, String> get _defaultHeaders => {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Accept': 'application/json',
-
+    // A DECOMMENTER POUR EBULLETIN
     //'Content-Type': 'application/json',
     //'Accept': '*/*',
   };
@@ -43,6 +44,7 @@ class ApiService {
         Uri.parse(url),
         headers: _defaultHeaders,
         body: body,
+        //body: jsonEncode(body), // A DECOMMENTER POUR EBULLETIN
       )
           .timeout(timeoutDuration);
 

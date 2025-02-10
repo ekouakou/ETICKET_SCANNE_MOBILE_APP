@@ -84,9 +84,19 @@ class EventService {
             }
         );
 
-        final responseBody = response.body.trim();
+        final jsonResponse = jsonDecode(response.body.trim());
 
-        if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
+        if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
+          return List<Map<String, dynamic>>.from(jsonResponse['data']);
+          /*setState(() {
+            _history = List<Map<String, dynamic>>.from(data['data']);
+            _filteredHistory = _history;
+          });*/
+        } else {
+          throw Exception('Erreur lors du parsing des données');
+        }
+
+        /*if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
           final jsonResponse = jsonDecode(responseBody);
           if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
             return List<Map<String, dynamic>>.from(jsonResponse['data']);
@@ -95,7 +105,7 @@ class EventService {
           }
         } else {
           throw Exception('La réponse du serveur n\'est pas en JSON valide');
-        }
+        }*/
       } else {
         throw Exception('Les clés startDate ou endDate sont manquantes');
       }

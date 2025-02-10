@@ -29,7 +29,7 @@ class AppConstants {
   static const double spaceLarge = 20.0;
   static const double spaceExtraLarge = 32.0;
 
-  static const int startDate = 2;
+  static const int startDate = 40;
   static const int endDate = 10;
   static const String dateFormat = 'yyyy-MM-dd';
 
