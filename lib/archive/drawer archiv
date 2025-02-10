@@ -1,0 +1,89 @@
+/*drawer: Drawer(
+        child: Container(
+          width: 100,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDarkMode
+                  ? [Color(0xFF022358), Color(0xFF000000)!]
+                  : [Colors.grey[900]!, Colors.black],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            children: <Widget>[
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    CircleAvatar(
+                      radius: 40,
+                      backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Nom de l\'utilisateur',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+
+              ListTile(
+                leading: Icon(Icons.home, color: drawerIconColor),
+                title: Text('Accueil', style: TextStyle(color: drawertextColor)),
+                onTap: () {
+                  Navigator.pushReplacementNamed(context, '/');
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.qr_code_scanner, color: drawerIconColor),
+                title: Text('Scanner QR Code', style: TextStyle(color: drawertextColor)),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => QRScanPage()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.history, color: drawerIconColor),
+                title: Text('Historique', style: TextStyle(color: drawertextColor)),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HistoryPage()),
+                  );
+                },
+              ),
+
+              ListTile(
+                leading: Icon(Icons.brightness_6, color: drawerIconColor),
+                title: Text('Mode Clair/Sombre', style: TextStyle(color: drawertextColor)),
+                onTap: () {
+                  Provider.of<ThemeProvider>(context, listen: false)
+                      .toggleTheme();
+                },
+              ),
+
+
+              Spacer(),
+              ListTile(
+                leading: Icon(Icons.exit_to_app, color: drawerIconColor),
+                title: Text('Se déconnecter', style: TextStyle(color: drawertextColor)),
+                onTap: () async {
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await prefs.clear();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),*/

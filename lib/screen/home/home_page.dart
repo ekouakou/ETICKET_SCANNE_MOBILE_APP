@@ -1,0 +1,381 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:google_fonts/google_fonts.dart' as google_fonts;
+import 'dart:async';
+import 'dart:convert';
+import '../../services/user_provider.dart';
+import '../../services/user_service.dart';
+import '../../utils/constants.dart';
+import '../login/login_page.dart';
+import '../scanner/qr_scan_page.dart';
+import '../scanner/history_page.dart';
+import '../event_detail_page.dart';
+import '../../utils/theme_provider.dart';
+import '../../services/api_service.dart';
+import '../../appDrawer/app_drawer.dart';
+
+import '../../BottomNavigationBar/custom_bottom_navigation.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  Timer? _timer;
+  List<Map<String, dynamic>> categories = [];
+  List<Map<String, dynamic>> _carouselItems = [];
+  bool _isLoading = true;
+  final String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/';
+
+  bool _isSearchBarVisible = false;
+  TextEditingController _searchController = TextEditingController();
+  String _fullName = "";
+  String _email = "";
+  String _phone = "";
+  String _profilePic = "";
+  String _utiToken = "";
+
+  @override
+  void initState() {
+    super.initState();
+
+    _startAutoSlide();
+    _fetchData();
+    //_loadUserData();
+    _fetchCarouselData();
+  }
+
+  void _startAutoSlide() {
+    _timer = Timer.periodic(Duration(seconds: 3), (timer) {
+      if (_pageController.hasClients && _carouselItems.isNotEmpty) {
+        _currentPage = (_currentPage + 1) % _carouselItems.length;
+        _pageController.animateToPage(
+          _currentPage,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeIn,
+        );
+      }
+    });
+  }
+
+  Future<void> _fetchData() async {
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _fullName = prefs.getString('UTIFIRSTLASTNAME') ?? 'Nom inconnu';
+      _email = prefs.getString('UTIMAIL') ?? 'Email inconnu';
+      _phone = prefs.getString('UTIPHONE') ?? 'Téléphone inconnu';
+      _profilePic = prefs.getString('UTIPIC') ?? ''; // URL ou base64 de la photo de profil
+      _utiToken = prefs.getString('UTITOKEN') ?? '';
+    });
+
+    print("Full Name: $_fullName");
+    print("Email: $_email");
+    print("Phone: $_phone");
+    print("Profile Pic: $_profilePic");
+    print("_utiToken : $_utiToken");
+    try {
+      Map<String, String> dateRange = ApiService.getDateRange(AppConstants.startDate, AppConstants.endDate, AppConstants.dateFormat);
+
+      // Vérification des clés avant d'utiliser les valeurs
+      if (dateRange.containsKey('startDate') && dateRange.containsKey('endDate')) {
+        final response = await ApiService.post(AppConstants.ticketManagerEndpoint, {
+          'mode': AppConstants.listEvenementFrontMode,
+          'DT_BEGIN': dateRange['startDate']!,
+          'DT_END': dateRange['endDate']!,
+          'STR_UTITOKEN': _utiToken,
+        });
+
+        final responseBody = response.body.trim();
+
+        if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
+          final jsonResponse = jsonDecode(responseBody);
+          if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
+            setState(() {
+              categories = List<Map<String, dynamic>>.from(jsonResponse['data']);
+              _isLoading = false;
+            });
+          } else {
+            throw Exception('La réponse du serveur n\'est pas au format attendu');
+          }
+        } else {
+          throw Exception('La réponse du serveur n\'est pas en JSON valide');
+        }
+      } else {
+        throw Exception('Les clés startDate ou endDate sont manquantes dans dateRange');
+      }
+    } catch (e) {
+      print('Erreur lors de la récupération des données: $e');
+    }
+
+  }
+
+  Future<void> _fetchCarouselData() async {
+
+    try {
+      Map<String, String> dateRange = ApiService.getDateRange(AppConstants.startDate, AppConstants.endDate, AppConstants.dateFormat);
+      if (dateRange.containsKey('startDate') && dateRange.containsKey('endDate')) {
+        final response = await ApiService.post(AppConstants.ConfigurationManagerEndpoint, {
+          'mode': AppConstants.listBanniereMode,
+          'DT_BEGIN': dateRange['startDate']!,
+          'DT_END': dateRange['endDate']!,
+        });
+
+        final responseBody = response.body.trim();
+
+        if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
+          final jsonResponse = jsonDecode(responseBody);
+          if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
+            setState(() {
+              _carouselItems = List<Map<String, dynamic>>.from(jsonResponse['data']);
+            });
+          } else {
+            throw Exception('La réponse du serveur n\'est pas au format attendu');
+          }
+        } else {
+          throw Exception('La réponse du serveur n\'est pas en JSON valide');
+        }
+      } else {
+        throw Exception('Les clés startDate ou endDate sont manquantes dans dateRange');
+      }
+
+    } catch (e) {
+      print('Erreur lors de la récupération des données du carousel: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    var userProvider = Provider.of<UserProvider>(context);
+
+
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        title: Text('Accueil'),
+        backgroundColor: isDarkMode ? Colors.black54 : Colors.white,
+        titleTextStyle: TextStyle(
+          color: isDarkMode ? Colors.white : Colors.black, // Change la couleur du texte
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: IconThemeData(
+          color: isDarkMode ? Colors.white : Colors.black, // Change la couleur de l'icône du drawer
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search, color: isDarkMode ? Colors.white : Colors.black), // Change la couleur de l'icône
+            onPressed: () {
+              setState(() {
+                _isSearchBarVisible = !_isSearchBarVisible;
+              });
+            },
+          ),
+        ],
+      ),
+      drawer: AppDrawer(userName: userProvider.fullName, userEmail : userProvider.email),
+
+
+      body: Column(
+        children: [
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            height: _isSearchBarVisible ? 60.0 : 0.0,
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: _isSearchBarVisible
+                ? Material(
+              elevation: 4,
+              shadowColor: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16.0),
+              child: Padding(
+                padding: const EdgeInsets.all(0.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    // Fonction de recherche
+                  },
+                ),
+              ),
+            )
+                : null,
+          ),
+          Expanded(
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : ListView(
+              children: [
+                SizedBox(height: 20),
+                // Slider d'événements
+                CarouselSlider(
+                  items: _carouselItems.map((item) {
+                    final imageUrl = item['STR_BANPATH'] != null
+                        ? _baseUrl + item['STR_BANPATH']
+                        : '';
+                    final title = item['title'] ?? 'Titre non disponible';
+                    final description = item['description'] ?? 'Description non disponible';
+                    final price = item['price'] ?? 'Buy Now';
+
+                    return Container(
+                      margin: EdgeInsets.symmetric(horizontal: 2.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        image: DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      /*child: Align(
+                        alignment: Alignment.bottomLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: google_fonts.GoogleFonts.poppins(fontSize: 20, color: Colors.white),
+                              ),
+                              Text(
+                                description,
+                                style: google_fonts.GoogleFonts.poppins(fontSize: 16, color: Colors.white),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {},
+                                child: Text(price),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),*/
+                    );
+                  }).toList(),
+                  options: CarouselOptions(
+                    height: 200,
+                    autoPlay: true,
+                    enlargeCenterPage: false,
+                    viewportFraction: 1.0,
+                  ),
+                ),
+                SizedBox(height: 20),
+                // Affichage des catégories et des événements
+                for (var category in categories)
+                  if (category['evenements'] != null && category['evenements'].isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            category['STR_LSTDESCRIPTION'] ?? 'Description non disponible',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: textColor),
+                          ),
+                        ),
+                        Container(
+                          height: 140,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: category['evenements'].length,
+                            itemBuilder: (context, index) {
+                              var event = category['evenements'][index];
+                              final imageUrl = event['STR_EVEPIC'] != null
+                                  ? _baseUrl + event['STR_EVEPIC']
+                                  : '';
+                              final eventName = event['STR_EVENAME'] ?? 'Nom non disponible';
+
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EventDetailPage(
+                                          eventId: event['LG_EVEID'] ?? ''),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.all(8.0),
+                                  width: 150,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(10.0),
+                                        child: CachedNetworkImage(
+                                          imageUrl: imageUrl,
+                                          height: 80,
+                                          width: 150,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              Center(child: CircularProgressIndicator()),
+                                          errorWidget: (context, url, error) =>
+                                              Icon(Icons.error),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          eventName,
+                                          style: TextStyle(
+                                              fontSize: 10, color: textColor),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => QRScanPage()));
+        },
+        child: Icon(Icons.qr_code_scanner, color: Colors.black),
+        backgroundColor:  isDarkMode ? Colors.yellow : Colors.yellow,
+      ),
+
+      bottomNavigationBar: CustomBottomNavBar(currentIndex: 0),
+
+    );
+  }
+}

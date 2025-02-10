@@ -1,7 +1,9 @@
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:convert';
-import 'api_service.dart'; // Assurez-vous que le chemin est correct
+import '../../services/api_service.dart';
+import '../../utils/theme_provider.dart'; // Assurez-vous que le chemin est correct
 
 class HistoryPage extends StatefulWidget {
   @override
@@ -76,8 +78,13 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final appBarColor = isDarkMode ? Colors.grey[850] : Colors.blue;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final borderColor = isDarkMode ? Colors.blueGrey : Colors.blue;
     return Scaffold(
-      appBar: AppBar(
+      /*appBar: AppBar(
         title: Text('Historique des tickets scannés'),
         backgroundColor: theme.primaryColor,
         actions: [
@@ -86,6 +93,37 @@ class _HistoryPageState extends State<HistoryPage> {
             onPressed: _toggleSearch,
           ),
         ],
+      ),*/
+
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight), // Hauteur de l'AppBar
+        child: Container(
+          /*decoration: BoxDecoration(
+            gradient:AppColors.getGradient(
+              context,
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ), // Dégradé dynamique depuis la méthode AppColors
+          ),*/
+          child: AppBar(
+            backgroundColor: Colors.transparent, // Fond transparent pour laisser voir le dégradé
+            elevation: 0, // Pas d'ombre
+            title: Text(
+              'Historique des tickets scannés',
+              style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+            iconTheme: IconThemeData(
+              color: isDarkMode ? Colors.white : Colors.black, // Change la couleur de l'icône du drawer
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.search),
+                onPressed: _toggleSearch,
+              ),
+            ],
+          ),
+        ),
       ),
       body: Stack(
         children: [

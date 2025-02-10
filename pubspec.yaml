@@ -66,11 +66,12 @@ dev_dependencies:
   provider: ^6.0.1
   shared_preferences: ^2.0.6
   palette_generator: ^0.3.3
-  fluttertoast: ^8.0.8
   cached_network_image: ^3.0.0
   image: ^3.0.1
   carousel_slider: ^4.0.0
   google_fonts: ^4.0.3
+  intl: ^0.17.0
+  intl_phone_field: ^3.0.0
 
 
 

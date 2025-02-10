@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class ApiService {
   // Configuration de l'URL de base
   static const String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
+  static const String _imagebaseUrl = 'http://guineeticket.com/eticketbackend/backoffice/webservices/';
 
   // Timeout par défaut pour les requêtes
   static const Duration timeoutDuration = Duration(seconds: 30);
@@ -14,6 +16,15 @@ class ApiService {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Accept': 'application/json',
   };
+
+  // Méthode pour obtenir l'URL de base
+  static String getBaseUrl() {
+    return _baseUrl;
+  }
+
+  static String getImageBaseUrl() {
+    return _imagebaseUrl;
+  }
 
   // Méthode POST générique
   static Future<http.Response> post(String endpoint, Map<String, String> body) async {
@@ -56,6 +67,29 @@ class ApiService {
       print('💥 Erreur inattendue : $e');
       throw Exception('Une erreur inattendue est survenue : $e');
     }
+  }
+
+  // Fonction pour obtenir la date de début et de fin
+  static Map<String, String> getDateRange(int weeksBefore, int weeksAfter, String dateFormat) {
+    // Récupère la date actuelle
+    DateTime now = DateTime.now();
+
+    // Calcul de la date de début en soustrayant les semaines (multiplié par 7 pour obtenir le nombre de jours)
+    DateTime startDate = now.subtract(Duration(days: weeksBefore * 7));
+
+    // Calcul de la date de fin en ajoutant les semaines (multiplié par 7 pour obtenir le nombre de jours)
+    DateTime endDate = now.add(Duration(days: weeksAfter * 7));
+
+    // Formatage des dates selon le format spécifié
+    DateFormat formatter = DateFormat(dateFormat);
+    String formattedStartDate = formatter.format(startDate);
+    String formattedEndDate = formatter.format(endDate);
+
+    // Retourne un map avec les dates formatées
+    return {
+      'startDate': formattedStartDate,
+      'endDate': formattedEndDate,
+    };
   }
 
   // Méthode GET générique
@@ -114,3 +148,5 @@ class ApiService {
     return '$_baseUrl$endpoint';
   }
 }
+
+

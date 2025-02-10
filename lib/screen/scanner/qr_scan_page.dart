@@ -5,8 +5,12 @@ import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'theme_provider.dart';
-import 'api_service.dart';
+import '../../utils/colors.dart';
+import '../../utils/constants.dart';
+import '../../utils/theme_provider.dart';
+import '../../services/api_service.dart';
+import '../../services/user_service.dart'; // Import du service utilisateur
+
 
 class QRScanPage extends StatefulWidget {
   @override
@@ -14,7 +18,7 @@ class QRScanPage extends StatefulWidget {
 }
 
 class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateMixin {
-  final String _baseUrl = 'http://192.168.0.146/';
+  //final String _baseUrl = 'http://192.168.0.146/';
 
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
@@ -28,7 +32,7 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _getUserInfo();
+    _loadUserInfo();
 
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -36,6 +40,11 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
     )..repeat(reverse: true);
 
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+  }
+
+  Future<void> _loadUserInfo() async {
+    userInfo = await UserService.getUserInfo();
+    setState(() {}); // Mettre à jour l'interface après le chargement des données
   }
 
   @override
@@ -54,26 +63,48 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
     final borderColor = isDarkMode ? Colors.blueGrey : Colors.blue;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: appBarColor,
-        elevation: 0,
-        title: Text(
-          'ADD ITEM',
-          style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.flash_on, color: textColor),
-            onPressed: () {
-              controller?.toggleFlash();
-            },
+     backgroundColor: backgroundColor,
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight), // Hauteur de l'AppBar
+        child: Container(
+          /*decoration: BoxDecoration(
+            gradient:AppColors.getGradient(
+              context,
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+            ), // Dégradé dynamique depuis la méthode AppColors
+          ),*/
+          child: AppBar(
+            backgroundColor: Colors.transparent, // Fond transparent pour laisser voir le dégradé
+            elevation: 0, // Pas d'ombre
+            title: Text(
+              'Scanner le QR Code',
+              style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+            iconTheme: IconThemeData(
+              color: isDarkMode ? Colors.white : Colors.black, // Change la couleur de l'icône du drawer
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.flash_on, color: textColor),
+                onPressed: () {
+                  controller?.toggleFlash();
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+
       body: Stack(
         children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppColors.getTreeGradient(context,begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,), // Dégradé dynamique depuis la méthode AppColors
+            ),
+          ),
           Center(
             child: Container(
               width: 300,
@@ -111,15 +142,7 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
               ),
             ),
           ),
-          /*Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: Text(
-                'Align QR Code within frame to scan',
-                style: TextStyle(color: textColor, fontSize: 16),
-              ),
-            ),
-          )*/
+
           Positioned(
             bottom: 30,
             left: 0,
@@ -163,11 +186,11 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
     List<String> parts = code.split('#');
 
     final response = await ApiService.post(
-      'TicketManager.php',
+      AppConstants.ticketManagerEndpoint,
       {
         'LG_TICID': parts[0],
         'STR_TICNAME': parts[1],
-        'mode': 'verifyTicket',
+        'mode': AppConstants.verifyTicketMode,
         'STR_UTITOKEN': userInfo['UTITOKEN'] ?? '',
       },
     );
@@ -271,7 +294,7 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10.0),
                   child: Image.network(
-                    _baseUrl + "backoffice/"+data['STR_EVEPIC'],
+                    ApiService.getImageBaseUrl(), //_baseUrl + "backoffice/"+data['STR_EVEPIC'],
                     width: 300,
                     height: 100,
                     fit: BoxFit.cover,
@@ -356,7 +379,8 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
   }
 
 
-  Future<void> _getUserInfo() async {
+
+  /*Future<void> _getUserInfo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       userInfo = {
@@ -371,5 +395,6 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
         'SITNAME': prefs.getString('SITNAME') ?? '',
       };
     });
-  }
+  }*/
+
 }

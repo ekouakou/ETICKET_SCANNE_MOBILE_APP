@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:palette_generator/palette_generator.dart';
-import 'qr_scan_page.dart';
+import '../services/api_service.dart';
+import '../utils/constants.dart';
+import 'scanner/qr_scan_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class EventDetailPage extends StatelessWidget {
@@ -51,7 +53,7 @@ class EventDetailPage extends StatelessWidget {
 
   Future<Map<String, dynamic>> fetchEventDetails() async {
     final response = await http.post(
-      Uri.parse('${_baseUrl}backoffice/webservices/TicketManager.php'),
+      Uri.parse('${ApiService.getBaseUrl()}TicketManager.php'),
       headers: <String, String>{
         'Content-Type': 'application/x-www-form-urlencoded',
       },
