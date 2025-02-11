@@ -4,8 +4,6 @@ import '../utils/constants.dart';
 import 'api_service.dart';
 
 class EventService {
-  final String _baseUrl = 'http://guineeticket.com/eticketbackend/backoffice/';
-
   Future<Map<String, String>> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -60,8 +58,6 @@ class EventService {
   }
 
 
-
-
   Future<List<Map<String, dynamic>>> fetchScanneHistory(String utiToken) async {
     // Méthode fetchEvents existante
     try {
@@ -80,32 +76,18 @@ class EventService {
               'DT_END': dateRange['endDate']!,
               'STR_UTITOKEN': utiToken,
               'LG_AGEREQUESTID':AppConstants.LG_AGEREQUESTID,
-              'LG_EVEID':'7WH3SbUfJOE5PaS7iD0WQ9LEmk3y10mjCiP3gm2y',
+              //"LG_UTIID":AppConstants.LG_UTIID,
+              "STR_TICSTATUT":AppConstants.STR_TICSTATUT,
+              "LG_EVEID":"",
             }
         );
 
-        final jsonResponse = jsonDecode(response.body.trim());
-
-        if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
-          return List<Map<String, dynamic>>.from(jsonResponse['data']);
-          /*setState(() {
-            _history = List<Map<String, dynamic>>.from(data['data']);
-            _filteredHistory = _history;
-          });*/
+        final responseBody = jsonDecode(response.body.trim());
+        if (responseBody is Map<String, dynamic> && responseBody.containsKey('data')) {
+          return List<Map<String, dynamic>>.from(responseBody['data']);
         } else {
           throw Exception('Erreur lors du parsing des données');
         }
-
-        /*if (responseBody.startsWith('{') || responseBody.startsWith('[')) {
-          final jsonResponse = jsonDecode(responseBody);
-          if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
-            return List<Map<String, dynamic>>.from(jsonResponse['data']);
-          } else {
-            throw Exception('La réponse du serveur n\'est pas au format attendu');
-          }
-        } else {
-          throw Exception('La réponse du serveur n\'est pas en JSON valide');
-        }*/
       } else {
         throw Exception('Les clés startDate ou endDate sont manquantes');
       }

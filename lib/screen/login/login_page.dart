@@ -1,3 +1,4 @@
+import 'package:eticketappmobile/screen/scanner/history_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../home/home_page.dart';
@@ -78,7 +79,8 @@ class _LoginPageState extends State<LoginPage> {
           if (storedToken != null && storedToken.isNotEmpty) {
             Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomePage())
+                MaterialPageRoute(builder: (context) => HistoryPage())
+                //MaterialPageRoute(builder: (context) => HomePage())
             );
           } else {
             _showErrorDialog(context, 'Erreur lors du stockage des données utilisateur');

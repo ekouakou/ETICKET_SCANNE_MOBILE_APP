@@ -3,12 +3,12 @@ import 'menu_item.dart';
 import 'package:flutter/material.dart';
 
 const MENU_ITEMS = [
-  {
+  /*{
     "id": "Accueil",
     "title": "Accueil",
     "icon": Icons.dashboard, // Icons.dashboard
     "route": "/HomePage"
-  },
+  },*/
   {
     "id": "QRScanPage",
     "title": "Scanner QR Code",

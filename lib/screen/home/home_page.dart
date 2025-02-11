@@ -285,7 +285,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor:  isDarkMode ? Colors.yellow : Colors.yellow,
       ),
 
-      bottomNavigationBar: CustomBottomNavBar(currentIndex: 0),
+      //bottomNavigationBar: CustomBottomNavBar(currentIndex: 0),
     );
   }
 }

@@ -19,7 +19,11 @@ class AppConstants {
   static const String listEvenementFrontMode = "listEvenementFront";
   static const String listBanniereMode = "listBanniere";
   static const String listTicketMode = "listTicket";
+
   static const String LG_AGEREQUESTID = "1";
+  static const String LG_UTIID = "1";
+  static const String STR_TICSTATUT = "scanned";
+
 
 
 

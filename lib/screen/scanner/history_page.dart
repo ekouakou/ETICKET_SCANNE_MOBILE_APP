@@ -1,12 +1,15 @@
-
 import 'dart:async';
-
+import 'package:eticketappmobile/screen/scanner/qr_scan_page.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
+import '../../appDrawer/app_drawer.dart';
+import '../../searchBar/Search_widget.dart';
 import '../../services/api_service.dart';
 import '../../services/event_service.dart';
-import '../../utils/theme_provider.dart'; // Assurez-vous que le chemin est correct
+import '../../services/user_provider.dart';
+import '../../utils/theme_provider.dart';
 
 class HistoryPage extends StatefulWidget {
   @override
@@ -14,232 +17,155 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  List<Map<String, dynamic>> _history = [];
-  List<Map<String, dynamic>> _filteredHistory = [];
-  bool _isSearchVisible = false;
-  TextEditingController _searchController = TextEditingController();
-
-  int _currentPage = 0;
-  Timer? _timer;
-  List<Map<String, dynamic>> tecketScanner = [];
-  List<Map<String, dynamic>> _carouselItems = [];
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _filteredCategories = [];
-  bool _isSearchBarVisible = false;
- // TextEditingController _searchController = TextEditingController();
-  String _utiToken = "";
-  final EventService _eventService = EventService(); // Instance du service
+  List<Map<String, dynamic>> ticketScanner = [];
+  List<Map<String, dynamic>> filteredTickets = [];
+  bool isLoading = true;
+  String utiToken = "";
+  final EventService _eventService = EventService();
+  final GlobalKey<SearchWidgetState> searchWidgetKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _fetchHistory();
     _loadData();
-    _searchController.addListener(_filterHistory);
   }
 
   Future<void> _loadData() async {
     try {
-      // Charger les données utilisateur depuis le service
       final userData = await _eventService.loadUserData();
-
       setState(() {
-        _utiToken = userData['utiToken']!;
+        utiToken = userData['utiToken']!;
       });
 
-      // Récupérer les événements et les données du carousel
-      tecketScanner = await _eventService.fetchScanneHistory(_utiToken);
-
+      final tickets = await _eventService.fetchScanneHistory(utiToken);
       setState(() {
-        _isLoading = false;
+        ticketScanner = tickets;
+        filteredTickets = tickets;
+        isLoading = false;
       });
     } catch (e) {
       print('Erreur lors du chargement des données: $e');
+      Fluttertoast.showToast(
+        msg: "Erreur lors du chargement des tickets: $e",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+      );
       setState(() {
-        _isLoading = false;
+        isLoading = false;
       });
     }
   }
 
-  Future<void> _fetchHistory() async {
-    try {
-      final response = await ApiService.post('TicketManager.php', {
-        'mode': 'listTicket',
-        'DT_BEGIN': '2024-01-01',
-        'DT_END': '2024-08-30',
-        'LG_AGEREQUESTID':'1',
-        'LG_EVEID':'7WH3SbUfJOE5PaS7iD0WQ9LEmk3y10mjCiP3gm2y',
-        'STR_UTITOKEN': 'omBDojlKb4713QY4JDqR',
-      });
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body.trim());
-
-        if (data is Map<String, dynamic> && data.containsKey('data')) {
-          setState(() {
-            _history = List<Map<String, dynamic>>.from(data['data']);
-            _filteredHistory = _history;
-          });
-        } else {
-          throw Exception('Erreur lors du parsing des données');
-        }
+  void _handleSearch(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredTickets = ticketScanner;
       } else {
-        throw Exception('Erreur lors de la requête : ${response.statusCode}');
+        filteredTickets = ticketScanner
+            .where((ticket) => ticket['STR_TICNAME']
+            .toString()
+            .toLowerCase()
+            .contains(query.toLowerCase()))
+            .toList();
       }
-    } catch (e) {
-      print('Erreur: $e');
-    }
-  }
-
-  void _filterHistory() {
-    setState(() {
-      _filteredHistory = _history
-          .where((item) => item['STR_TICNAME']
-          .toLowerCase()
-          .contains(_searchController.text.toLowerCase()))
-          .toList();
     });
   }
 
-  void _toggleSearch() {
-    setState(() {
-      _isSearchVisible = !_isSearchVisible;
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Widget _buildTicketList(BuildContext context, List<Map<String, dynamic>> items) {
+    return items.isEmpty
+        ? Center(child: Text('Aucun ticket trouvé'))
+        : ListView.builder(
+      padding: EdgeInsets.all(16.0),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final ticket = items[index];
+        return Card(
+          margin: EdgeInsets.symmetric(vertical: 8.0),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.2),
+          child: ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(8.0),
+              child: Image.network(
+                ApiService.getImageBaseUrl() + ticket['STR_TICBARECODE'],
+                fit: BoxFit.cover,
+                width: 50.0,
+                height: 50.0,
+              ),
+            ),
+            title: Text(ticket['STR_TICNAME']),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(ticket['STR_TICPHONE']),
+                Text('Validé le: ' + ticket['DT_TCIVALIDATED']),
+              ],
+            ),
+            trailing: Icon(Icons.more_vert),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final isDarkMode = Provider.of<ThemeProvider>(context).isDarkMode;
-    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
-    final appBarColor = isDarkMode ? Colors.grey[850] : Colors.blue;
     final textColor = isDarkMode ? Colors.white : Colors.black;
-    final borderColor = isDarkMode ? Colors.blueGrey : Colors.blue;
-    return Scaffold(
-      /*appBar: AppBar(
-        title: Text('Historique des tickets scannés'),
-        backgroundColor: theme.primaryColor,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: _toggleSearch,
-          ),
-        ],
-      ),*/
+    var userProvider = Provider.of<UserProvider>(context);
 
+    return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight), // Hauteur de l'AppBar
-        child: Container(
-          /*decoration: BoxDecoration(
-            gradient:AppColors.getGradient(
-              context,
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-            ), // Dégradé dynamique depuis la méthode AppColors
-          ),*/
-          child: AppBar(
-            backgroundColor: Colors.transparent, // Fond transparent pour laisser voir le dégradé
-            elevation: 0, // Pas d'ombre
-            title: Text(
-              'Historique des tickets scannés',
-              style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'Tickets scannés',
+            style: TextStyle(
+                color: textColor,
+                fontSize: 20,
+                fontWeight: FontWeight.bold
             ),
-            centerTitle: true,
-            iconTheme: IconThemeData(
-              color: isDarkMode ? Colors.white : Colors.black, // Change la couleur de l'icône du drawer
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.search),
+              color: isDarkMode ? Colors.white : Colors.black,
+              onPressed: () {
+                searchWidgetKey.currentState?.toggleSearch();
+              },
             ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.search),
-                onPressed: _toggleSearch,
-              ),
-            ],
+          ],
+          iconTheme: IconThemeData(
+            color: isDarkMode ? Colors.white : Colors.black,
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          Container(
-            height: 0,
-            color: theme.primaryColor,
-          ),
-          Column(
-            children: [
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                height: _isSearchVisible ? 60.0 : 0.0,
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: _isSearchVisible
-                    ? Material(
-                  //elevation: 4,
-                  //shadowColor: Colors.black.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(0.0),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Rechercher',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20.0),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: theme.inputDecorationTheme.fillColor,
-                      ),
-                    ),
-                  ),
-                )
-                    : null,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16.0),
-                    itemCount: _filteredHistory.length,
-                    itemBuilder: (context, index) {
-                      var item = _filteredHistory[index];
-                      return Card(
-                        margin: EdgeInsets.symmetric(vertical: 8.0),
-                        elevation: 4,
-                        shadowColor: Colors.black.withOpacity(0.2),
-                        child: ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: Image.network(
-                              'http://192.168.1.5/backoffice/' + item['STR_TICBARECODE'],
-                              fit: BoxFit.cover,
-                              width: 50.0,
-                              height: 50.0,
-                            ),
-                          ),
-                          title: Text(item['STR_TICNAME']),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item['STR_TICPHONE']),
-                              Text('Validé le: ' + item['DT_TCIVALIDATED']),
-                              Text('Événement: ' + item['STR_EVENAME']),
-                            ],
-                          ),
-                          trailing: Icon(Icons.more_vert),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+
+      // A COMMENTER SI JE VEUX RITIRER LE DRAWER
+      drawer: AppDrawer(userName: userProvider.fullName, userEmail : userProvider.email),
+
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SearchWidget<Map<String, dynamic>>(
+        key: searchWidgetKey,
+        items: ticketScanner,
+        filteredItems: filteredTickets,
+        onSearch: _handleSearch,
+        hintText: 'Rechercher un ticket',
+        buildResults: _buildTicketList,
+      ),
+
+      // A COMMENTER SI JE VEUX RITIRER LE FLOATING ACTION
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => QRScanPage()));
+        },
+        child: Icon(Icons.qr_code_scanner, color: Colors.black),
+        backgroundColor:  isDarkMode ? Colors.yellow : Colors.yellow,
       ),
     );
   }
