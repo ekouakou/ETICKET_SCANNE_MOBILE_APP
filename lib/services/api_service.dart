@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 class ApiService {
   // Configuration de l'URL de base
   static const String _baseUrl = 'https://guineeticket.com/eticketbackend/backoffice/webservices/';
-  //static const String _baseUrl = 'https://192.168.0.146:8181/fonctionnaire/login';
+  //static const String _baseUrl = 'http://192.168.0.146:8181/fonctionnaire/login';
   static const String _imagebaseUrl = 'https://guineeticket.com/eticketbackend/backoffice/';
 
   // Timeout par défaut pour les requêtes

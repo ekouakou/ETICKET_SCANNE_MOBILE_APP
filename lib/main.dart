@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          title: 'Flutter Firebase Auth',
+          title: 'Flutter Firebase Auth ',
           theme: AppTheme.getLightTheme(context),
           darkTheme: AppTheme.getDarkTheme(context),
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,

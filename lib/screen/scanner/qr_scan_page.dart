@@ -216,11 +216,13 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
       _isDialogOpen = true;
 
       if (data['code_statut'] == '0') {
-        showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red);
-      } else if (data['code_statut'] == '1') {
-        showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red);
-      } else if (data['code_statut'] == '2') {
-        showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red);
+        showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red); // erreur
+      }
+      /*else if (data['code_statut'] == '1') {
+        showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red); // success
+      }*/
+      else if (data['code_statut'] == '2') {
+        showCustomDialog(context, data['desc_statut'], icon: Icons.error, iconColor: Colors.red); // warning
       } else {
         showDialog(
           context: context,
