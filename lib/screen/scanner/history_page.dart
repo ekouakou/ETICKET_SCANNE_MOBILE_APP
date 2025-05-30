@@ -45,11 +45,11 @@ class _HistoryPageState extends State<HistoryPage> {
       });
     } catch (e) {
       print('Erreur lors du chargement des données: $e');
-      Fluttertoast.showToast(
+      /*Fluttertoast.showToast(
         msg: "Erreur lors du chargement des tickets: $e",
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.BOTTOM,
-      );
+      );*/
       setState(() {
         isLoading = false;
       });

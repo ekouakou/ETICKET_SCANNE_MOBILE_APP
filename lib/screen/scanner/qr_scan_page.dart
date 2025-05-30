@@ -203,14 +203,14 @@ class _QRScanPageState extends State<QRScanPage> with SingleTickerProviderStateM
 
     final data = jsonDecode(response.body);
 
-    Fluttertoast.showToast(
+    /*Fluttertoast.showToast(
       msg: "Objet JSON: ${data}",
       toastLength: Toast.LENGTH_LONG,
       gravity: ToastGravity.BOTTOM,
       backgroundColor: Colors.black,
       textColor: Colors.white,
       fontSize: 16.0,
-    );
+    );*/
 
     if (response.statusCode == 200) {
       _isDialogOpen = true;
